@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<section class="section reveal">
+  <h1>About the project</h1>
+  <p class="lead">A university project demonstrating confidentiality, authentication and secure file handling with Python.</p>
+</section>
+
+<section class="section reveal">
+  <h2>Abstract</h2>
+  <div class="card prose">
+    <p>This application lets registered users encrypt images with AES-256-GCM, protect the encryption keys with RSA-OAEP, and send the result to other users over an authenticated web interface. It combines symmetric and asymmetric cryptography in a <em>hybrid</em> design, the same pattern used by TLS and secure email.</p>
+  </div>
+</section>
+
+<section class="section reveal">
+  <h2>AES vs DES vs RSA</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Property</th><th>AES-256-GCM</th><th>DES</th><th>RSA-OAEP</th></tr></thead>
+      <tbody>
+        <tr><td>Type</td><td>Symmetric</td><td>Symmetric</td><td>Asymmetric</td></tr>
+        <tr><td>Key size</td><td>256 bits</td><td>56 effective bits</td><td>2048&ndash;3072 bits</td></tr>
+        <tr><td>Block size</td><td>128 bits</td><td>64 bits</td><td>n/a</td></tr>
+        <tr><td>Speed</td><td>Very fast</td><td>Fast, but obsolete</td><td>Slow</td></tr>
+        <tr><td>Integrity check</td><td>Built in (GCM tag)</td><td>None</td><td>None</td></tr>
+        <tr><td>Status</td><td>Recommended</td><td>Broken; demo only</td><td>Recommended for key wrapping</td></tr>
+        <tr><td>Role here</td><td>Encrypts images</td><td>Educational comparison</td><td>Protects AES keys</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section reveal">
+  <h2>Technology stack</h2>
+  <div class="grid">
+    <article class="card"><h3>Backend</h3><p>Python, Flask, Flask-SQLAlchemy, Flask-Login, Flask-WTF, Flask-Limiter, Pillow</p></article>
+    <article class="card"><h3>Cryptography</h3><p>cryptography (AES-GCM, RSA-OAEP) and PyCryptodome (DES demo)</p></article>
+    <article class="card"><h3>Frontend and data</h3><p>HTML5, CSS3, JavaScript, SQLite via SQLAlchemy ORM</p></article>
+  </div>
+</section>
+{% endblock %}

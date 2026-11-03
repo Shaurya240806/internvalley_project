@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+instance/*.db
+uploads/*
+encrypted_files/*
+!uploads/.gitkeep
+!encrypted_files/.gitkeep
+!instance/.gitkeep
+*.pem
+*.key

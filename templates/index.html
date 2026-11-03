@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="hero reveal">
+  <p class="eyebrow">Python &middot; Flask &middot; Modern Cryptography</p>
+  <h1>Secure Image Encryption:<br><span class="gradient-text">Leveraging Python and Cryptographic Libraries</span></h1>
+  <p class="lead">Encrypt images with AES-256-GCM, protect keys with RSA-OAEP, and share them with other users so that only the intended recipient can ever open them.</p>
+</section>
+
+<section class="section reveal">
+  <h2>Main features</h2>
+  <div class="grid">
+    <article class="card"><h3>Authenticated accounts</h3><p>Registration and login with salted, slow password hashing and rate-limited sign-in.</p></article>
+    <article class="card"><h3>AES-256-GCM encryption</h3><p>Every image gets a fresh random key and nonce. Tampering is detected by the authentication tag.</p></article>
+    <article class="card"><h3>RSA hybrid encryption</h3><p>The AES key is wrapped with the recipient's RSA public key using OAEP padding.</p></article>
+    <article class="card"><h3>Secure transfer</h3><p>Send encrypted images to another user and track Pending, Received and Downloaded status.</p></article>
+    <article class="card"><h3>Dashboard and history</h3><p>Statistics, recent activity and a complete encryption and transfer history.</p></article>
+    <article class="card"><h3>DES learning module</h3><p>An isolated, clearly-warned demo showing why DES is obsolete next to AES.</p></article>
+  </div>
+</section>
+
+<section class="section reveal">
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li><strong>Upload</strong><span>The image is validated by its real content, not just its file extension.</span></li>
+    <li><strong>Encrypt</strong><span>AES-256-GCM scrambles the image bytes with a one-time random key.</span></li>
+    <li><strong>Wrap the key</strong><span>RSA-OAEP encrypts that AES key with the recipient's public key.</span></li>
+    <li><strong>Transfer</strong><span>Only ciphertext and the wrapped key are stored or sent.</span></li>
+    <li><strong>Decrypt</strong><span>The recipient's private key unwraps the AES key and the image is restored exactly.</span></li>
+  </ol>
+</section>
+
+<section class="section reveal">
+  <h2>Security features</h2>
+  <ul class="checklist">
+    <li>Passwords hashed with scrypt (never stored in plain text)</li>
+    <li>CSRF protection on every form</li>
+    <li>HttpOnly, SameSite session cookies</li>
+    <li>Strict Content-Security-Policy and security headers</li>
+    <li>Private keys stored only in encrypted form</li>
+    <li>Per-user access control on every file and transfer</li>
+    <li>Authenticated encryption: modified files are rejected</li>
+    <li>Secrets read from environment variables, never from source code</li>
+  </ul>
+</section>
+{% endblock %}
