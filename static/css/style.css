@@ -76,6 +76,34 @@ tr:last-child td { border-bottom: 0; }
 .flash { padding: .8rem 1rem; border-radius: 12px; border: 1px solid var(--line); background: var(--glass); }
 .flash-success { border-color: #22c55e; } .flash-danger, .flash-error { border-color: #ef4444; } .flash-warning { border-color: #f59e0b; }
 
+.cta-row { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
+.btn-secondary { background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+
+.head-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.stats { margin-top: 1rem; }
+.stat-card { min-height: 160px; }
+.stat-card .value { font-size: clamp(2rem, 4vw, 2.6rem); margin: .3rem 0; font-weight: 800; }
+.stat-card .label { color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
+
+.split { display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem; }
+.stacked-form { display: grid; gap: 1rem; }
+.stacked-form label { display: grid; gap: .45rem; color: var(--muted); font-size: .92rem; }
+.stacked-form input[type="file"],
+.stacked-form input[type="password"] { width: 100%; padding: .8rem .9rem; border-radius: 12px; border: 1px solid var(--line); background: rgba(8, 14, 27, 0.9); color: var(--text); }
+.password-meter { width: 100%; height: 10px; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+#password-meter-bar { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e, #06b6d4); transition: width .2s ease; }
+#password-meter-bar[data-level="weak"] { background: #ef4444; }
+#password-meter-bar[data-level="fair"] { background: #f59e0b; }
+#password-meter-bar[data-level="good"] { background: #22c55e; }
+#password-meter-bar[data-level="strong"] { background: #06b6d4; }
+#password-meter-bar[data-level="excellent"] { background: #8b5cf6; }
+#password-meter-text { color: var(--muted); margin-top: -.25rem; }
+
+.activity-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .9rem; }
+.activity-list li { display: grid; gap: .2rem; padding: .8rem .9rem; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+.activity-list .pill { display: inline-flex; width: fit-content; padding: .25rem .55rem; border-radius: 999px; background: rgba(34,211,238,.12); color: var(--cyan); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+.activity-list small { color: var(--muted); }
+
 .site-footer { border-top: 1px solid var(--line); padding: 1.4rem 0; color: var(--muted); text-align: center; font-size: .9rem; }
 .site-footer p { margin: 0; }
 

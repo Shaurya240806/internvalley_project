@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<section class="section reveal">
+  <div class="head-row">
+    <div>
+      <p class="eyebrow">Project overview</p>
+      <h1>Secure transfer dashboard</h1>
+    </div>
+    <a class="btn" href="#upload-demo">Run upload demo</a>
+  </div>
+</section>
+
+<section class="section reveal stats grid">
+  <article class="card stat-card">
+    <span class="label">Images uploaded</span>
+    <div class="value">{{ summary.images }}</div>
+    <p>Tracked local uploads and ownership records.</p>
+  </article>
+  <article class="card stat-card">
+    <span class="label">Encrypted files</span>
+    <div class="value">{{ summary.encrypted }}</div>
+    <p>Secure ciphertext records created from source images.</p>
+  </article>
+  <article class="card stat-card">
+    <span class="label">Transfers</span>
+    <div class="value">{{ summary.transfers }}</div>
+    <p>Pending, received and downloaded transfer states.</p>
+  </article>
+</section>
+
+<section class="section reveal">
+  <div class="split" id="upload-demo">
+    <div class="card">
+      <h2>Secure upload demo</h2>
+      <form class="stacked-form" method="post" enctype="multipart/form-data">
+        <label>
+          Image file
+          <input type="file" name="file" accept="image/*" required>
+        </label>
+
+        <label>
+          Password for encryption
+          <input type="password" name="password" data-password-meter placeholder="Enter at least 8 characters">
+        </label>
+
+        <div class="password-meter" aria-label="Password strength indicator">
+          <span id="password-meter-bar" data-level="weak"></span>
+        </div>
+        <small id="password-meter-text">Password strength: weak</small>
+
+        <button type="submit" class="btn">Prepare encryption</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Recent activity</h2>
+      {% if recent_activity %}
+      <ul class="activity-list">
+        {% for item in recent_activity %}
+        <li>
+          <span class="pill">{{ item.action | title }}</span>
+          <strong>{{ item.detail or 'System event' }}</strong>
+          <small>{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>No activity has been recorded yet. Upload a file to begin tracking secure file operations.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
