@@ -16,7 +16,7 @@ load_dotenv(BASE_DIR / ".env")
 
 class Config:
     BASE_DIR = BASE_DIR
-    APP_NAME = "CipherVault"
+    APP_NAME = "CypherVault"
 
     # Development fallback: a random key per run (sessions reset on restart).
     # It is random, never a fixed string in the source code.

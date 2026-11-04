@@ -1,4 +1,4 @@
-# CipherVault - Secure Image Encryption (Flask)
+# CypherVault - Secure Image Encryption (Flask)
 
 Full README is written in Phase 7. Quick start:
 
