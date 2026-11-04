@@ -35,6 +35,12 @@ def test_404_page_is_friendly(client):
     assert r.status_code == 404 and b"does not exist" in r.data
 
 
+def test_dashboard_form_has_csrf_token(client):
+    r = client.get("/dashboard")
+    assert r.status_code == 200
+    assert b'name="csrf_token"' in r.data
+
+
 def test_uploads_folders_not_web_accessible(client):
     assert client.get("/uploads/x.png").status_code == 404
     assert client.get("/encrypted_files/x.bin").status_code == 404

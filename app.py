@@ -9,6 +9,7 @@ import os
 
 import click
 from flask import Flask, render_template
+from flask_wtf.csrf import generate_csrf
 
 from config import CONFIG_MAP
 from extensions import csrf, db, limiter, login_manager
@@ -46,7 +47,11 @@ def create_app(config_name: str | None = None) -> Flask:
     @app.context_processor
     def inject_globals():
         from datetime import datetime
-        return {"app_name": app.config["APP_NAME"], "year": datetime.now().year}
+        return {
+            "app_name": app.config["APP_NAME"],
+            "year": datetime.now().year,
+            "csrf_token_value": generate_csrf(),
+        }
 
     with app.app_context():
         db.create_all()   # creates any missing tables (safe to run repeatedly)

@@ -34,6 +34,7 @@
     <div class="card">
       <h2>Secure upload demo</h2>
       <form class="stacked-form" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
         <label>
           Image file
           <input type="file" name="file" accept="image/*" required>
