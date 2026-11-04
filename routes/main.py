@@ -8,11 +8,12 @@ from types import SimpleNamespace
 
 from flask import (Blueprint, current_app, flash, jsonify, redirect,
                    render_template, request, url_for)
+from flask_login import login_required, current_user
+from models import EncryptedFile, Transfer, User
 from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 
 from extensions import db
-from models import Transfer
 from security.image_encryption import encrypt_image
 
 main_bp = Blueprint("main", __name__)
@@ -29,41 +30,46 @@ def about():
 
 
 @main_bp.get("/dashboard")
+@login_required
 def dashboard():
-    """A quick overview of saved uploads, ciphertext, and real transfers."""
-    upload_folder = current_app.config["UPLOAD_FOLDER"]
-    encrypted_folder = current_app.config["ENCRYPTED_FOLDER"]
+    """Show upload, encryption, and transfer activity for the signed-in user."""
+    user_files = EncryptedFile.query.filter_by(owner_id=current_user.id)
+    user_transfers = Transfer.query.filter(
+        (Transfer.sender_id == current_user.id) |
+        (Transfer.recipient_id == current_user.id)
+    )
+    file_count = user_files.count()
     summary = {
-        "images": sum(1 for _ in upload_folder.glob("*.json")),
-        "encrypted": sum(1 for _ in encrypted_folder.glob("*.cvlt")),
-        "transfers": db.session.query(Transfer).count(),
+        "images": file_count,
+        "encrypted": file_count,
+        "transfers": user_transfers.count(),
     }
-    recent_activity = []
-    for metadata_path in upload_folder.glob("*.json"):
-        try:
-            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-            created_at = datetime.fromisoformat(metadata["created_at"])
-        except (OSError, ValueError, KeyError, TypeError):
-            created_at = datetime.fromtimestamp(
-                metadata_path.stat().st_mtime, tz=timezone.utc
-            )
-            metadata = {"filename": metadata_path.stem}
-        recent_activity.append(SimpleNamespace(
+    recent_activity = [
+        SimpleNamespace(
             action="encrypt",
-            detail=f"Encrypted {metadata.get('filename', 'image')}",
-            created_at=created_at,
-        ))
-    recent_activity.sort(key=lambda item: item.created_at, reverse=True)
-    recent_activity = recent_activity[:5]
+            detail=f"Encrypted {encrypted_file.original_filename}",
+            created_at=encrypted_file.created_at,
+        )
+        for encrypted_file in user_files.order_by(
+            EncryptedFile.created_at.desc()
+        ).limit(5).all()
+    ]
+    users = User.query.all()
+    remote_connections = user_transfers.order_by(
+        Transfer.created_at.desc()
+    ).limit(5).all()
     return render_template("dashboard.html", summary=summary,
-                           recent_activity=recent_activity)
+                           recent_activity=recent_activity, username=current_user.username,
+                           users=users, remote_connections=remote_connections)
 
 
 @main_bp.post("/dashboard")
+@login_required
 def dashboard_submit():
-    """Validate and encrypt an image, keeping only ciphertext on disk."""
+    """Validate and encrypt an image, keeping only ciphertext on disk, and create a transfer."""
     uploaded = request.files.get("file")
     password = request.form.get("password", "")
+    recipient_id = request.form.get("recipient_id")
 
     if not uploaded or not uploaded.filename:
         flash("Choose an image file before submitting the form.", "warning")
@@ -71,6 +77,15 @@ def dashboard_submit():
 
     if len(password) < 8:
         flash("Use a password with at least 8 characters for stronger key protection.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    if not recipient_id or not recipient_id.isdigit():
+        flash("Select a valid recipient.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    recipient = User.query.get(int(recipient_id))
+    if not recipient or recipient.id == current_user.id:
+        flash("Select a valid recipient (not yourself).", "warning")
         return redirect(url_for("main.dashboard"))
 
     original_name = secure_filename(uploaded.filename)
@@ -110,6 +125,25 @@ def dashboard_submit():
             "encrypted_filename": encrypted_name,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }), encoding="utf-8")
+
+        # Record the owner so dashboard activity stays account-specific.
+        encrypted_file = EncryptedFile(
+            owner_id=current_user.id,
+            recipient_id=recipient.id,
+            original_filename=original_name,
+            encrypted_filename=encrypted_name,
+            algorithm="AES-256-GCM",
+            size_bytes=len(image_data),
+        )
+        db.session.add(encrypted_file)
+        db.session.flush()  # get encrypted_file.id
+        transfer = Transfer(
+            encrypted_file_id=encrypted_file.id,
+            sender_id=current_user.id,
+            recipient_id=recipient.id,
+        )
+        db.session.add(transfer)
+        db.session.commit()
     except OSError:
         encrypted_path.unlink(missing_ok=True)
         metadata_path.unlink(missing_ok=True)
@@ -117,7 +151,7 @@ def dashboard_submit():
         flash("The encrypted image could not be saved. Please try again.", "error")
         return redirect(url_for("main.dashboard"))
 
-    flash("Image encrypted and saved successfully. No transfer was created because no recipient was selected.", "success")
+    flash(f"Image encrypted and securely transferred to {recipient.username}.", "success")
     return redirect(url_for("main.dashboard"))
 
 

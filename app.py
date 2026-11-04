@@ -37,8 +37,11 @@ def create_app(config_name: str | None = None) -> Flask:
     login_manager.session_protection = "strong"
 
     import models  # noqa: F401  (registers tables with SQLAlchemy)
+
     from routes.main import main_bp
+    from routes.auth import auth_bp
     app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
 
     register_error_handlers(app)
     register_security_headers(app, config_cls)

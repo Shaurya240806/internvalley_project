@@ -22,6 +22,13 @@
         <li><a href="{{ url_for('main.index') }}" {% if request.endpoint == 'main.index' %}class="active"{% endif %}>Home</a></li>
         <li><a href="{{ url_for('main.about') }}" {% if request.endpoint == 'main.about' %}class="active"{% endif %}>About</a></li>
         <li><a href="{{ url_for('main.dashboard') }}" {% if request.endpoint == 'main.dashboard' %}class="active"{% endif %}>Dashboard</a></li>
+        {% if current_user.is_authenticated %}
+          <li><a href="#">{{ current_user.username }}</a></li>
+          <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+        {% else %}
+          <li><a href="{{ url_for('auth.login') }}" {% if request.endpoint == 'auth.login' %}class="active"{% endif %}>Login</a></li>
+          <li><a href="{{ url_for('auth.register') }}" {% if request.endpoint == 'auth.register' %}class="active"{% endif %}>Register</a></li>
+        {% endif %}
         {% block nav_extra %}{% endblock %}
       </ul>
     </nav>

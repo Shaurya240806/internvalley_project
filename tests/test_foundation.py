@@ -39,13 +39,28 @@ def test_404_page_is_friendly(client):
     assert r.status_code == 404 and b"does not exist" in r.data
 
 
-def test_dashboard_form_has_csrf_token(client):
+def test_dashboard_form_has_csrf_token(app, client):
+    with app.app_context():
+        make_user()
+    client.post("/login", data={
+        "username": "alice",
+        "password": "Str0ng!Passw0rd",
+    })
     r = client.get("/dashboard")
     assert r.status_code == 200
     assert b'name="csrf_token"' in r.data
 
 
 def test_dashboard_encrypts_upload_and_updates_counts(app, client, tmp_path):
+    with app.app_context():
+        make_user()
+        recipient = make_user("recipient", "recipient@example.com")
+        recipient_id = recipient.id
+    client.post("/login", data={
+        "username": "alice",
+        "password": "Str0ng!Passw0rd",
+    })
+
     upload_folder = tmp_path / "uploads"
     encrypted_folder = tmp_path / "encrypted"
     app.config["UPLOAD_FOLDER"] = upload_folder
@@ -60,6 +75,7 @@ def test_dashboard_encrypts_upload_and_updates_counts(app, client, tmp_path):
     response = client.post("/dashboard", data={
         "file": (image_bytes, "test.png"),
         "password": "Correct-Horse-42!",
+        "recipient_id": str(recipient_id),
     }, content_type="multipart/form-data")
 
     assert response.status_code == 302
@@ -68,10 +84,54 @@ def test_dashboard_encrypts_upload_and_updates_counts(app, client, tmp_path):
     assert len(encrypted_files) == 1
     assert len(metadata_files) == 1
     assert encrypted_files[0].read_bytes().startswith(b"CVLT1")
-    assert b"Image encrypted and saved successfully" in client.get("/dashboard").data
+    assert b"Image encrypted and securely transferred" in client.get("/dashboard").data
     dashboard = client.get("/dashboard").get_data(as_text=True)
-    assert re.findall(r'<div class="value">(\d+)</div>', dashboard) == ["1", "1", "0"]
+    assert re.findall(r'<div class="value">(\d+)</div>', dashboard) == ["1", "1", "1"]
     assert "Encrypted test.png" in dashboard
+
+
+def test_dashboard_data_is_scoped_to_logged_in_user(app, client, tmp_path):
+    upload_folder = tmp_path / "uploads"
+    encrypted_folder = tmp_path / "encrypted"
+    upload_folder.mkdir()
+    encrypted_folder.mkdir()
+    app.config["UPLOAD_FOLDER"] = upload_folder
+    app.config["ENCRYPTED_FOLDER"] = encrypted_folder
+    (upload_folder / "shared.json").write_text(
+        '{"filename":"sender-only.png","created_at":"2026-01-01T00:00:00+00:00"}',
+        encoding="utf-8",
+    )
+    (encrypted_folder / "shared.cvlt").write_bytes(b"ciphertext")
+
+    with app.app_context():
+        sender = make_user("sender", "sender@example.com")
+        recipient = make_user("recipient", "recipient@example.com")
+        recipient_id = recipient.id
+        encrypted_file = EncryptedFile(
+            owner_id=sender.id,
+            recipient_id=recipient.id,
+            original_filename="sender-only.png",
+            encrypted_filename="sender-only.cvlt",
+            algorithm=Algorithm.AES_GCM,
+            size_bytes=12,
+        )
+        db.session.add(encrypted_file)
+        db.session.flush()
+        db.session.add(Transfer(
+            encrypted_file_id=encrypted_file.id,
+            sender_id=sender.id,
+            recipient_id=recipient.id,
+        ))
+        db.session.commit()
+
+    client.post("/login", data={
+        "username": "recipient",
+        "password": "Str0ng!Passw0rd",
+    })
+    dashboard = client.get("/dashboard").get_data(as_text=True)
+    assert re.findall(r'<div class="value">(\d+)</div>', dashboard) == ["0", "0", "1"]
+    assert "Encrypted sender-only.png" not in dashboard
+    assert "recipient</strong> received from <strong>sender" in dashboard
 
 
 def test_uploads_folders_not_web_accessible(client):

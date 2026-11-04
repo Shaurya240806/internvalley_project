@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<section class="section form-section">
+  <h1>Create your CypherVault account</h1>
+  <form method="post" class="stacked-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+    <label>Username
+      <input type="text" name="username" required autofocus>
+    </label>
+    <label>Email
+      <input type="email" name="email" required>
+    </label>
+    <label>Password
+      <input type="password" name="password" required>
+    </label>
+    <button type="submit" class="btn">Register</button>
+  </form>
+  <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<section class="section form-section">
+  <h1>Login to CypherVault</h1>
+  <form method="post" class="stacked-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+    <label>Username
+      <input type="text" name="username" required autofocus>
+    </label>
+    <label>Password
+      <input type="password" name="password" required>
+    </label>
+    <button type="submit" class="btn">Login</button>
+  </form>
+  <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>.</p>
+</section>
+{% endblock %}

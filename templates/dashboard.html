@@ -13,19 +13,19 @@
 
 <section class="section reveal stats grid">
   <article class="card stat-card">
-    <span class="label">Images uploaded</span>
+    <span class="label">Images uploaded by you</span>
     <div class="value">{{ summary.images }}</div>
-    <p>Validated images successfully submitted for encryption.</p>
+    <p>Validated images you submitted for encryption.</p>
   </article>
   <article class="card stat-card">
-    <span class="label">Encrypted files</span>
+    <span class="label">Encrypted files created by you</span>
     <div class="value">{{ summary.encrypted }}</div>
-    <p>Encrypted image files stored privately on this server.</p>
+    <p>Your encrypted image files stored privately on this server.</p>
   </article>
   <article class="card stat-card">
     <span class="label">Transfers</span>
     <div class="value">{{ summary.transfers }}</div>
-    <p>Encryption does not send files; this stays zero until you add a recipient.</p>
+    <p>Transfers you sent or received.</p>
   </article>
 </section>
 
@@ -45,17 +45,37 @@
           <input type="password" name="password" data-password-meter placeholder="Enter at least 8 characters">
         </label>
 
+        <label>
+          Recipient
+          <select name="recipient_id" required>
+            <option value="">-- Select recipient --</option>
+            {% for user in users if user.id != current_user.id %}
+              <option value="{{ user.id }}">{{ user.username }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
         <div class="password-meter" aria-label="Password strength indicator">
           <span id="password-meter-bar" data-level="weak"></span>
         </div>
         <small id="password-meter-text">Password strength: weak</small>
 
-        <button type="submit" class="btn">Encrypt and save</button>
+        <button type="submit" class="btn">Encrypt and transfer</button>
       </form>
     </div>
 
     <div class="card">
       <h2>Recent activity</h2>
+      <h2>Secure remote user connections</h2>
+      <ul>
+        {% for transfer in remote_connections %}
+          <li>
+            <strong>{{ transfer.recipient.username }}</strong> received from <strong>{{ transfer.sender.username }}</strong> ({{ transfer.status }})
+          </li>
+        {% else %}
+          <li>No transfers yet.</li>
+        {% endfor %}
+      </ul>
       {% if recent_activity %}
       <ul class="activity-list">
         {% for item in recent_activity %}
