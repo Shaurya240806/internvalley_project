@@ -1,4 +1,8 @@
+import re
+from io import BytesIO
+
 import pytest
+from PIL import Image
 from sqlalchemy.exc import IntegrityError
 
 from config import CONFIG_MAP, DevelopmentConfig, ProductionConfig
@@ -39,6 +43,34 @@ def test_dashboard_form_has_csrf_token(client):
     r = client.get("/dashboard")
     assert r.status_code == 200
     assert b'name="csrf_token"' in r.data
+
+
+def test_dashboard_encrypts_upload_and_updates_counts(app, client, tmp_path):
+    upload_folder = tmp_path / "uploads"
+    encrypted_folder = tmp_path / "encrypted"
+    app.config["UPLOAD_FOLDER"] = upload_folder
+    app.config["ENCRYPTED_FOLDER"] = encrypted_folder
+    upload_folder.mkdir()
+    encrypted_folder.mkdir()
+
+    image_bytes = BytesIO()
+    Image.new("RGB", (2, 2), color="red").save(image_bytes, format="PNG")
+    image_bytes.seek(0)
+
+    response = client.post("/dashboard", data={
+        "file": (image_bytes, "test.png"),
+        "password": "Correct-Horse-42!",
+    }, content_type="multipart/form-data")
+
+    assert response.status_code == 302
+    encrypted_files = list(encrypted_folder.glob("*.cvlt"))
+    metadata_files = list(upload_folder.glob("*.json"))
+    assert len(encrypted_files) == 1
+    assert len(metadata_files) == 1
+    assert encrypted_files[0].read_bytes().startswith(b"CVLT1")
+    assert b"Image encrypted and saved successfully" in client.get("/dashboard").data
+    dashboard = client.get("/dashboard").get_data(as_text=True)
+    assert re.findall(r'<div class="value">(\d+)</div>', dashboard) == ["1", "1", "0"]
 
 
 def test_uploads_folders_not_web_accessible(client):

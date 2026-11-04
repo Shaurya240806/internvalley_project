@@ -15,17 +15,17 @@
   <article class="card stat-card">
     <span class="label">Images uploaded</span>
     <div class="value">{{ summary.images }}</div>
-    <p>Tracked local uploads and ownership records.</p>
+    <p>Validated images successfully submitted for encryption.</p>
   </article>
   <article class="card stat-card">
     <span class="label">Encrypted files</span>
     <div class="value">{{ summary.encrypted }}</div>
-    <p>Secure ciphertext records created from source images.</p>
+    <p>Encrypted image files stored privately on this server.</p>
   </article>
   <article class="card stat-card">
     <span class="label">Transfers</span>
     <div class="value">{{ summary.transfers }}</div>
-    <p>Pending, received and downloaded transfer states.</p>
+    <p>Encryption does not send files; this stays zero until you add a recipient.</p>
   </article>
 </section>
 
@@ -37,7 +37,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
         <label>
           Image file
-          <input type="file" name="file" accept="image/*" required>
+          <input type="file" name="file" accept=".jpg,.jpeg,.png,.webp" required>
         </label>
 
         <label>
@@ -50,7 +50,7 @@
         </div>
         <small id="password-meter-text">Password strength: weak</small>
 
-        <button type="submit" class="btn">Prepare encryption</button>
+        <button type="submit" class="btn">Encrypt and save</button>
       </form>
     </div>
 

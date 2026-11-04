@@ -1,8 +1,17 @@
 """Public pages: landing, dashboard, about, and a health check."""
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+import json
+import uuid
+from io import BytesIO
+from pathlib import Path
+
+from flask import (Blueprint, current_app, flash, jsonify, redirect,
+                   render_template, request, url_for)
+from PIL import Image, UnidentifiedImageError
+from werkzeug.utils import secure_filename
 
 from extensions import db
 from models import ActivityLog, EncryptedFile, Transfer, UploadedImage
+from security.image_encryption import encrypt_image
 
 main_bp = Blueprint("main", __name__)
 
@@ -19,10 +28,12 @@ def about():
 
 @main_bp.get("/dashboard")
 def dashboard():
-    """A quick overview of files, transfers and recent activity."""
+    """A quick overview of saved uploads, ciphertext, and real transfers."""
+    upload_folder = current_app.config["UPLOAD_FOLDER"]
+    encrypted_folder = current_app.config["ENCRYPTED_FOLDER"]
     summary = {
-        "images": db.session.query(UploadedImage).count(),
-        "encrypted": db.session.query(EncryptedFile).count(),
+        "images": sum(1 for _ in upload_folder.glob("*.json")),
+        "encrypted": sum(1 for _ in encrypted_folder.glob("*.cvlt")),
         "transfers": db.session.query(Transfer).count(),
     }
     recent_activity = (
@@ -37,7 +48,7 @@ def dashboard():
 
 @main_bp.post("/dashboard")
 def dashboard_submit():
-    """Lightweight demo upload flow used to validate the next-step UX."""
+    """Validate and encrypt an image, keeping only ciphertext on disk."""
     uploaded = request.files.get("file")
     password = request.form.get("password", "")
 
@@ -49,7 +60,50 @@ def dashboard_submit():
         flash("Use a password with at least 8 characters for stronger key protection.", "warning")
         return redirect(url_for("main.dashboard"))
 
-    flash("Secure upload flow prepared successfully. Encryption and transfer logic can now be connected to the dashboard.", "success")
+    original_name = secure_filename(uploaded.filename)
+    extension = Path(original_name).suffix.lower().lstrip(".")
+    if extension not in current_app.config["ALLOWED_EXTENSIONS"]:
+        flash("Choose a JPG, PNG, or WebP image.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    image_data = uploaded.read()
+    try:
+        image = Image.open(BytesIO(image_data))
+        image_format = image.format
+        width, height = image.size
+        image.verify()
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        flash("The selected file is not a valid image.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    expected_formats = {"jpg": "JPEG", "jpeg": "JPEG", "png": "PNG", "webp": "WEBP"}
+    if image_format != expected_formats.get(extension):
+        flash("The image content does not match its file extension.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    artifact_id = uuid.uuid4().hex
+    encrypted_name = f"{artifact_id}.cvlt"
+    metadata_name = f"{artifact_id}.json"
+    encrypted_path = current_app.config["ENCRYPTED_FOLDER"] / encrypted_name
+    metadata_path = current_app.config["UPLOAD_FOLDER"] / metadata_name
+
+    try:
+        encrypted_path.write_bytes(encrypt_image(image_data, password))
+        metadata_path.write_text(json.dumps({
+            "filename": original_name,
+            "size_bytes": len(image_data),
+            "width": width,
+            "height": height,
+            "encrypted_filename": encrypted_name,
+        }), encoding="utf-8")
+    except OSError:
+        encrypted_path.unlink(missing_ok=True)
+        metadata_path.unlink(missing_ok=True)
+        current_app.logger.exception("Could not save encrypted upload")
+        flash("The encrypted image could not be saved. Please try again.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    flash("Image encrypted and saved successfully. No transfer was created because no recipient was selected.", "success")
     return redirect(url_for("main.dashboard"))
 
 
