@@ -1,8 +1,10 @@
 """Public pages: landing, dashboard, about, and a health check."""
 import json
 import uuid
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
+from types import SimpleNamespace
 
 from flask import (Blueprint, current_app, flash, jsonify, redirect,
                    render_template, request, url_for)
@@ -10,7 +12,7 @@ from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 
 from extensions import db
-from models import ActivityLog, EncryptedFile, Transfer, UploadedImage
+from models import Transfer
 from security.image_encryption import encrypt_image
 
 main_bp = Blueprint("main", __name__)
@@ -36,12 +38,23 @@ def dashboard():
         "encrypted": sum(1 for _ in encrypted_folder.glob("*.cvlt")),
         "transfers": db.session.query(Transfer).count(),
     }
-    recent_activity = (
-        db.session.query(ActivityLog)
-        .order_by(ActivityLog.created_at.desc())
-        .limit(5)
-        .all()
-    )
+    recent_activity = []
+    for metadata_path in upload_folder.glob("*.json"):
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            created_at = datetime.fromisoformat(metadata["created_at"])
+        except (OSError, ValueError, KeyError, TypeError):
+            created_at = datetime.fromtimestamp(
+                metadata_path.stat().st_mtime, tz=timezone.utc
+            )
+            metadata = {"filename": metadata_path.stem}
+        recent_activity.append(SimpleNamespace(
+            action="encrypt",
+            detail=f"Encrypted {metadata.get('filename', 'image')}",
+            created_at=created_at,
+        ))
+    recent_activity.sort(key=lambda item: item.created_at, reverse=True)
+    recent_activity = recent_activity[:5]
     return render_template("dashboard.html", summary=summary,
                            recent_activity=recent_activity)
 
@@ -95,6 +108,7 @@ def dashboard_submit():
             "width": width,
             "height": height,
             "encrypted_filename": encrypted_name,
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }), encoding="utf-8")
     except OSError:
         encrypted_path.unlink(missing_ok=True)

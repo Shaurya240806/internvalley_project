@@ -71,6 +71,7 @@ def test_dashboard_encrypts_upload_and_updates_counts(app, client, tmp_path):
     assert b"Image encrypted and saved successfully" in client.get("/dashboard").data
     dashboard = client.get("/dashboard").get_data(as_text=True)
     assert re.findall(r'<div class="value">(\d+)</div>', dashboard) == ["1", "1", "0"]
+    assert "Encrypted test.png" in dashboard
 
 
 def test_uploads_folders_not_web_accessible(client):
